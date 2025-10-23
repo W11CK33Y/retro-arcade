@@ -98,14 +98,13 @@ footer {
 <script>
 // ---------- Themes ----------
 const themes = [
-  { bodyBg:"radial-gradient(circle at center, #1a0028 0%, #080010 80%)", text:"#d78aff", glow:"#a84aff", snake:"#d78aff", food:"#ff66cc" },
-  { bodyBg:"radial-gradient(circle at center, #001a00 0%, #000800 80%)", text:"#00ff88", glow:"#00ffaa", snake:"#00ff88", food:"#33ff66" },
-  { bodyBg:"radial-gradient(circle at center, #2a001a 0%, #100008 80%)", text:"#ff00aa", glow:"#ff66cc", snake:"#ff00aa", food:"#ff3399" }
+  { bodyBg:"#080010", text:"#d78aff", glow:"#a84aff", snake:"#d78aff", food:"#ff66cc", bgColor:"#12001d" },
+  { bodyBg:"#000800", text:"#00ff88", glow:"#00ffaa", snake:"#00ff88", food:"#33ff66", bgColor:"#001100" },
+  { bodyBg:"#100008", text:"#ff00aa", glow:"#ff66cc", snake:"#ff00aa", food:"#ff3399", bgColor:"#1a0011" }
 ];
 
 let currentTheme = parseInt(localStorage.getItem("retroTheme")) || 0;
 const themeBtn = document.getElementById("themeBtn");
-
 themeBtn.addEventListener("click", ()=>{
   currentTheme = (currentTheme+1)%themes.length;
   localStorage.setItem("retroTheme", currentTheme);
@@ -126,7 +125,7 @@ const ctx = canvas.getContext("2d");
 const ROW = 20, COL = 12, SQ = 20;
 
 let snake = [{x:5, y:8}];
-let dir = {x:0, y:0};
+let dir = {x:1, y:0}; // start moving right immediately
 let food = {x:Math.floor(Math.random()*COL), y:Math.floor(Math.random()*ROW)};
 let score = 0;
 let highscore = localStorage.getItem("retro_snake_highscore") || 0;
@@ -140,18 +139,16 @@ function drawSquare(x,y,color){
   ctx.strokeRect(x*SQ,y*SQ,SQ,SQ);
 }
 
-// Draw board
 function drawBoard(){
-  ctx.fillStyle = themes[currentTheme].bodyBg;
+  // Clear board
+  ctx.fillStyle = themes[currentTheme].bgColor;
   ctx.fillRect(0,0,COL*SQ,ROW*SQ);
   // Draw snake
   snake.forEach(segment=> drawSquare(segment.x, segment.y, themes[currentTheme].snake));
   // Draw food
   drawSquare(food.x, food.y, themes[currentTheme].food);
 }
-drawBoard();
 
-// Move snake
 function updateSnake(){
   const head = {x:snake[0].x+dir.x, y:snake[0].y+dir.y};
 
