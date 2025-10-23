@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="js/theme.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏓 Pong | Retro Arcade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+body {
+  font-family: 'Press Start 2P', monospace;
+  background: radial-gradient(circle at center, #1a0028 0%, #080010 80%);
+  color: #d78aff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+  overflow: hidden;
+  position: relative;
+}
+
+h1 {
+  font-size: 1.4rem;
+  text-shadow: 0 0 10px #d78aff, 0 0 25px #a84aff;
+  margin-bottom: 5px;
+}
+
+#scoreboard {
+  margin-bottom: 10px;
+  font-size: 0.7rem;
+  display: flex;
+  justify-content: space-around;
+  width: 240px;
+  text-shadow: 0 0 8px #d78aff;
+}
+
+canvas {
+  border: 3px solid #d78aff;
+  box-shadow: 0 0 20px #a84aff, 0 0 40px #8a2be2;
+  background: #12001d;
+}
+
+button {
+  margin-bottom: 12px;
+  background: transparent;
+  border: 2px solid #d78aff;
+  color: #d78aff;
+  padding: 0.7rem 1.5rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  text-shadow: 0 0 8px #d78aff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background: #d78aff;
+  color: #1a0028;
+  box-shadow: 0 0 20px #d78aff, 0 0 40px #8a2be2;
+  transform: scale(1.05);
+}
+
+.scanlines {
+  position: absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.03),
+    rgba(255,255,255,0.03) 1px,
+    transparent 2px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<h1>🏓 Pong</h1>
+
+<div id="scoreboard">
+  <div>Score: <span id="playerScore">0</span></div>
+  <div>High: <span id="highscore">0</span></div>
+</div>
+
+<button id="themeBtn">🎨 Change Theme</button>
+<canvas id="pong" width="500" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById("pong");
+const ctx = canvas.getContext("2d");
+
+// Paddle & Ball
+const paddleWidth = 10, paddleHeight = 80;
+let playerScore = 0;
+let highscore = localStorage.getItem("pongHighscore") || 0;
+document.getElementById("highscore").textContent = highscore;
+
+let player = {x:10, y:canvas.height/2 - paddleHeight/2, width:paddleWidth, height:paddleHeight};
+let ai = {x:canvas.width-20, y:canvas.height/2 - paddleHeight/2, width:paddleWidth, height:paddleHeight};
+let ball = {x:canvas.width/2, y:canvas.height/2, radius:8, speedX:4, speedY:4};
+
+// Themes
+const themes = [
+  { bodyBg:"radial-gradient(circle at center, #1a0028 0%, #080010 80%)", text:"#d78aff", glow:"#a84aff", paddleColor:"#a84aff", ballColor:"#d78aff", canvasBg:"#12001d", canvasBorder:"#d78aff" },
+  { bodyBg:"radial-gradient(circle at center, #001a00 0%, #000800 80%)", text:"#00ff88", glow:"#00ffaa", paddleColor:"#00ff88", ballColor:"#00ffaa", canvasBg:"#001100", canvasBorder:"#00ff88" },
+  { bodyBg:"radial-gradient(circle at center, #2a001a 0%, #100008 80%)", text:"#ff00aa", glow:"#ff66cc", paddleColor:"#ff00aa", ballColor:"#ff66cc", canvasBg:"#1a0011", canvasBorder:"#ff00aa" }
+];
+
+// Persistent theme
+let currentTheme = parseInt(localStorage.getItem("retroTheme")) || 0;
+
+// Apply theme
+function applyTheme(theme){
+  document.body.style.background = theme.bodyBg;
+  document.body.style.color = theme.text;
+  document.querySelector("h1").style.textShadow = `0 0 10px ${theme.text}, 0 0 25px ${theme.glow}`;
+  canvas.style.border = `3px solid ${theme.canvasBorder}`;
+  canvas.style.background = theme.canvasBg;
+  player.color = ai.color = theme.paddleColor;
+  ball.color = theme.ballColor;
+}
+
+// Theme button
+document.getElementById("themeBtn").addEventListener("click", ()=>{
+  currentTheme = (currentTheme+1)%themes.length;
+  localStorage.setItem("retroTheme", currentTheme);
+  applyTheme(themes[currentTheme]);
+});
+
+// Draw
+function drawRect(obj){ctx.fillStyle=obj.color; ctx.fillRect(obj.x,obj.y,obj.width,obj.height);}
+function drawCircle(obj){ctx.fillStyle=obj.color; ctx.beginPath(); ctx.arc(obj.x,obj.y,obj.radius,0,Math.PI*2); ctx.fill();}
+function drawEverything(){ctx.clearRect(0,0,canvas.width,canvas.height); drawRect(player); drawRect(ai); drawCircle(ball);}
+
+// Controls
+document.addEventListener("keydown", e=>{
+  if(e.key==="w") player.y -=20;
+  else if(e.key==="s") player.y +=20;
+});
+
+// Game loop
+function update(){
+  // Ball movement
+  ball.x += ball.speedX; ball.y += ball.speedY;
+
+  // Bounce top/bottom
+  if(ball.y+ball.radius>canvas.height || ball.y-ball.radius<0) ball.speedY*=-1;
+
+  // Bounce paddles
+  if(ball.x-ball.radius<player.x+player.width && ball.y>player.y && ball.y<player.y+player.height) ball.speedX*=-1;
+  if(ball.x+ball.radius>ai.x && ball.y>ai.y && ball.y<ai.y+ai.height) ball.speedX*=-1;
+
+  // AI movement
+  let target = ball.y - ai.height/2;
+  ai.y += (target - ai.y) * 0.1;
+
+  // Score
+  if(ball.x < 0){ ball.x=canvas.width/2; ball.y=canvas.height/2; playerScore++; document.getElementById("playerScore").textContent = playerScore; if(playerScore>highscore){ highscore=playerScore; localStorage.setItem("pongHighscore",highscore); } document.getElementById("highscore").textContent = highscore; }
+  if(ball.x > canvas.width){ ball.x=canvas.width/2; ball.y=canvas.height/2; playerScore=0; document.getElementById("playerScore").textContent = playerScore; }
+
+  drawEverything();
+}
+
+// Initialize
+applyTheme(themes[currentTheme]);
+setInterval(update,20);
+</script>
+</body>
+</html>

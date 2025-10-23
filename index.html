@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🕹️ Retro Arcade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+body {
+  font-family: 'Press Start 2P', monospace;
+  background: radial-gradient(circle at center, #1a0028 0%, #080010 80%);
+  color: #d78aff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+  overflow: hidden;
+  position: relative;
+}
+
+h1 {
+  font-size: 1.6rem;
+  text-shadow: 0 0 10px #d78aff, 0 0 25px #a84aff;
+  margin-bottom: 20px;
+}
+
+button {
+  background: transparent;
+  border: 2px solid #d78aff;
+  color: #d78aff;
+  padding: 0.8rem 2rem;
+  margin: 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  text-shadow: 0 0 8px #d78aff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background: #d78aff;
+  color: #1a0028;
+  box-shadow: 0 0 20px #d78aff, 0 0 40px #8a2be2;
+  transform: scale(1.05);
+}
+
+#scores {
+  margin-top: 20px;
+  font-size: 0.8rem;
+  display: flex;
+  justify-content: space-around;
+  width: 80%;
+  text-shadow: 0 0 8px #d78aff;
+}
+
+.scanlines {
+  position: absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.03),
+    rgba(255,255,255,0.03) 1px,
+    transparent 2px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<h1>🕹️ Retro Arcade</h1>
+
+<button id="themeBtn">🎨 Change Theme</button>
+
+<div>
+  <button onclick="window.location.href='tetris.html'">🧱 Tetris</button>
+  <button onclick="window.location.href='snake.html'">🐍 Snake</button>
+  <button onclick="window.location.href='pong.html'">🏓 Pong</button>
+</div>
+
+<div id="scores">
+  <div>Tetris High: <span id="tetrisHigh">0</span></div>
+  <div>Snake High: <span id="snakeHigh">0</span></div>
+  <div>Pong High: <span id="pongHigh">0</span></div>
+</div>
+
+<!-- Retro Arcade Tagline -->
+<p id="arcadeTagline" style="margin-top:20px; font-size:0.7rem;"></p>
+
+<script>
+  // Shared themes
+  const themes = [
+    { bodyBg:"radial-gradient(circle at center, #1a0028 0%, #080010 80%)", text:"#d78aff", glow:"#a84aff" },
+    { bodyBg:"radial-gradient(circle at center, #001a00 0%, #000800 80%)", text:"#00ff88", glow:"#00ffaa" },
+    { bodyBg:"radial-gradient(circle at center, #2a001a 0%, #100008 80%)", text:"#ff00aa", glow:"#ff66cc" }
+  ];
+
+  // Load current theme from localStorage
+  let currentTheme = parseInt(localStorage.getItem("retroTheme")) || 0;
+function applyTheme(theme){
+
+  document.body.style.background = theme.bodyBg;
+  document.body.style.color = theme.text;
+  // Tone down h1 glow
+  document.querySelector("h1").style.textShadow = `0 0 5px ${theme.text}, 0 0 15px ${theme.glow}`;
+  document.querySelectorAll("button").forEach(btn=>{
+    btn.style.border = `2px solid ${theme.text}`;
+    btn.style.color = theme.text;
+    // Tone down button glow
+    btn.style.textShadow = `0 0 4px ${theme.text}`;
+  });
+
+  // Update tagline glow
+  const taglineEl = document.getElementById("arcadeTagline");
+  if(taglineEl.textContent) {
+    taglineEl.style.color = theme.text;
+    taglineEl.style.textShadow = `0 0 4px ${theme.text}`;
+  }
+}
+
+
+
+  document.getElementById("themeBtn").addEventListener("click", ()=>{
+    currentTheme = (currentTheme+1) % themes.length;
+    localStorage.setItem("retroTheme", currentTheme);
+    applyTheme(themes[currentTheme]);
+  });
+
+  applyTheme(themes[currentTheme]);
+
+  // Load high scores from localStorage
+  document.getElementById("tetrisHigh").textContent = localStorage.getItem("retro_tetris_highscore") || 0;
+  document.getElementById("snakeHigh").textContent = localStorage.getItem("snakeHighscore") || 0;
+  document.getElementById("pongHigh").textContent = localStorage.getItem("pongHighscore") || 0;
+
+  // Dynamic neon taglines
+  const taglines = [
+    "💾 Play. Score. Repeat. Welcome to the Neon Arcade! ⚡",
+    "🚀 Can you beat the high score? Step into the Neon Arena! 🎮",
+    "🕹️ Pixels, power-ups, and pure fun. Enter the Retro Grid! ✨",
+    "⚡ Ready. Set. Game! Neon thrills await every click. 💥",
+    "💡 Score big. Glow brighter. Neon Arcade forever! 🎯"
+  ];
+
+  // Pick a random tagline
+  const randomTagline = taglines[Math.floor(Math.random() * taglines.length)];
+  const taglineElement = document.getElementById("arcadeTagline");
+  taglineElement.textContent = randomTagline;
+  taglineElement.style.color = themes[currentTheme].text;
+  taglineElement.style.textShadow = `0 0 8px ${themes[currentTheme].text}`;
+</script>
+
+</body>
+</html>
