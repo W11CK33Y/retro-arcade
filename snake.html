@@ -9,12 +9,12 @@
 
 body {
   font-family: 'Press Start 2P', monospace;
+  margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100vh;
-  margin: 0;
   text-align: center;
   overflow: hidden;
   background: radial-gradient(circle at center, #1a0028 0%, #080010 80%);
@@ -23,7 +23,7 @@ body {
 
 h1 {
   font-size: 1.4rem;
-  text-shadow: 0 0 5px #d78aff, 0 0 15px #a84aff;
+  text-shadow: 0 0 8px #d78aff, 0 0 20px #a84aff;
   margin-bottom: 5px;
 }
 
@@ -33,27 +33,27 @@ h1 {
   display: flex;
   justify-content: space-around;
   width: 240px;
-  text-shadow: 0 0 4px #d78aff;
+  text-shadow: 0 0 8px #d78aff;
 }
 
 canvas {
   border: 3px solid #d78aff;
-  box-shadow: 0 0 10px #a84aff, 0 0 20px #8a2be2;
+  box-shadow: 0 0 15px #a84aff, 0 0 30px #8a2be2;
   background: #12001d;
-  touch-action: none;
   max-width: 95%;
   height: auto;
+  touch-action: none;
 }
 
 button {
-  margin-bottom: 12px;
+  margin-top: 12px;
   background: transparent;
   border: 2px solid #d78aff;
   color: #d78aff;
   padding: 0.7rem 1.5rem;
   font-size: 0.8rem;
   font-family: inherit;
-  text-shadow: 0 0 4px #d78aff;
+  text-shadow: 0 0 8px #d78aff;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -61,7 +61,7 @@ button {
 button:hover {
   background: #d78aff;
   color: #1a0028;
-  box-shadow: 0 0 10px #d78aff, 0 0 20px #8a2be2;
+  box-shadow: 0 0 15px #d78aff, 0 0 30px #8a2be2;
   transform: scale(1.05);
 }
 
@@ -71,13 +71,20 @@ button:hover {
   left:0;
   width:100%;
   height:100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.03),
+    rgba(255,255,255,0.03) 1px,
+    transparent 2px,
+    transparent 3px
+  );
   pointer-events: none;
   z-index: 10;
 }
 </style>
 </head>
 <body>
-<div class="scanlines" id="scanlines"></div>
+<div class="scanlines"></div>
 <h1>🐍 Snake</h1>
 
 <div id="scoreboard">
@@ -91,95 +98,76 @@ button:hover {
 <script>
 const canvas = document.getElementById("snake");
 const ctx = canvas.getContext("2d");
-
-// Game settings
 const box = 20;
-let snake = [{x: 9*box, y: 10*box}];
+
+// Themes
+const themes = [
+  { bodyBg:"radial-gradient(circle at center, #1a0028 0%, #080010 80%)", text:"#d78aff", glow:"#a84aff", snakeColor:"#d78aff", foodColor:"#a84aff", canvasBorder:"#d78aff", canvasBg:"#12001d"},
+  { bodyBg:"radial-gradient(circle at center, #001a00 0%, #000800 80%)", text:"#00ff88", glow:"#00ffaa", snakeColor:"#00ff88", foodColor:"#00ffaa", canvasBorder:"#00ff88", canvasBg:"#001100"},
+  { bodyBg:"radial-gradient(circle at center, #2a001a 0%, #100008 80%)", text:"#ff00aa", glow:"#ff66cc", snakeColor:"#ff00aa", foodColor:"#ff66cc", canvasBorder:"#ff00aa", canvasBg:"#1a0011"}
+];
+
+let currentTheme = parseInt(localStorage.getItem("retroTheme")) || 0;
+function applyTheme(theme){
+  document.body.style.background = theme.bodyBg;
+  document.body.style.color = theme.text;
+  document.querySelector("h1").style.textShadow = `0 0 8px ${theme.text}, 0 0 20px ${theme.glow}`;
+  canvas.style.border = `3px solid ${theme.canvasBorder}`;
+  canvas.style.background = theme.canvasBg;
+}
+document.getElementById("themeBtn").addEventListener("click",()=>{
+  currentTheme=(currentTheme+1)%themes.length;
+  localStorage.setItem("retroTheme",currentTheme);
+  applyTheme(themes[currentTheme]);
+});
+applyTheme(themes[currentTheme]);
+
+// Game variables
+let snake = [{x:9*box, y:10*box}];
 let direction = null;
-let targetDirection = null; // For smooth direction changes
 let food = {x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box};
 let score = 0;
 let highscore = localStorage.getItem("snakeHighscore") || 0;
 document.getElementById("highscore").textContent = highscore;
 
-// Themes
-const themes = [
-  { bodyBg:"radial-gradient(circle at center, #1a0028 0%, #080010 80%)",
-    text:"#d78aff", glow:"#a84aff",
-    canvasBorder:"#d78aff", canvasBg:"#12001d",
-    snakeColor:"#d78aff", foodColor:"#a84aff" },
-  { bodyBg:"radial-gradient(circle at center, #001a00 0%, #000800 80%)",
-    text:"#00ff88", glow:"#00ffaa",
-    canvasBorder:"#00ff88", canvasBg:"#001100",
-    snakeColor:"#00ff88", foodColor:"#00ffaa" },
-  { bodyBg:"radial-gradient(circle at center, #2a001a 0%, #100008 80%)",
-    text:"#ff00aa", glow:"#ff66cc",
-    canvasBorder:"#ff00aa", canvasBg:"#1a0011",
-    snakeColor:"#ff00aa", foodColor:"#ff66cc" }
-];
-let currentTheme = parseInt(localStorage.getItem("retroTheme")) || 0;
-
-// Apply theme
-function applyTheme(theme){
-  document.body.style.background = theme.bodyBg;
-  document.body.style.color = theme.text;
-  document.querySelector("h1").style.textShadow = `0 0 5px ${theme.text}, 0 0 15px ${theme.glow}`;
-  canvas.style.border = `3px solid ${theme.canvasBorder}`;
-  canvas.style.background = theme.canvasBg;
-}
-
-// Theme button
-document.getElementById("themeBtn").addEventListener("click", ()=>{
-  currentTheme = (currentTheme+1)%themes.length;
-  localStorage.setItem("retroTheme", currentTheme);
-  applyTheme(themes[currentTheme]);
-});
-
-// Draw functions
-function drawSquare(x,y,color){
-  ctx.fillStyle = color;
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 10;
-  ctx.fillRect(x,y,box,box);
-  ctx.shadowBlur = 0;
-}
-function drawSnake(){
-  snake.forEach(s=>drawSquare(s.x,s.y,themes[currentTheme].snakeColor));
-}
-function drawFood(){
-  drawSquare(food.x,food.y,themes[currentTheme].foodColor);
+// Draw
+function drawSquare(x,y,color){ ctx.fillStyle=color; ctx.fillRect(x,y,box,box); }
+function drawSnake(){ 
+  ctx.clearRect(0,0,canvas.width,canvas.height); 
+  snake.forEach(s=>drawSquare(s.x,s.y,themes[currentTheme].snakeColor)); 
+  drawSquare(food.x,food.y,themes[currentTheme].foodColor); 
 }
 
 // Controls
 document.addEventListener("keydown", e=>{
-  if(e.key==="ArrowLeft" && direction!="RIGHT") targetDirection="LEFT";
-  else if(e.key==="ArrowUp" && direction!="DOWN") targetDirection="UP";
-  else if(e.key==="ArrowRight" && direction!="LEFT") targetDirection="RIGHT";
-  else if(e.key==="ArrowDown" && direction!="UP") targetDirection="DOWN";
+  if(e.key==="ArrowLeft" && direction!="RIGHT") direction="LEFT";
+  else if(e.key==="ArrowUp" && direction!="DOWN") direction="UP";
+  else if(e.key==="ArrowRight" && direction!="LEFT") direction="RIGHT";
+  else if(e.key==="ArrowDown" && direction!="UP") direction="DOWN";
 });
 
-// Mobile swipe support
-let touchStartX=null, touchStartY=null;
-canvas.addEventListener("touchstart", e=>{
-  const t=e.touches[0]; touchStartX=t.clientX; touchStartY=t.clientY;
-}, {passive:false});
-canvas.addEventListener("touchend", e=>{
-  const t=e.changedTouches[0];
-  const dx=t.clientX-touchStartX;
-  const dy=t.clientY-touchStartY;
-  if(Math.abs(dx)>Math.abs(dy)){
-    if(dx>0 && direction!="LEFT") targetDirection="RIGHT";
-    else if(dx<0 && direction!="RIGHT") targetDirection="LEFT";
-  }else{
-    if(dy>0 && direction!="UP") targetDirection="DOWN";
-    else if(dy<0 && direction!="DOWN") targetDirection="UP";
+// Mobile swipe controls
+let touchStartX=0, touchStartY=0;
+canvas.addEventListener('touchstart', e=>{
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+}, false);
+canvas.addEventListener('touchend', e=>{
+  const touch = e.changedTouches[0];
+  const deltaX = touch.clientX - touchStartX;
+  const deltaY = touch.clientY - touchStartY;
+  if(Math.abs(deltaX) > Math.abs(deltaY)){ // horizontal swipe
+    if(deltaX > 0 && direction!="LEFT") direction="RIGHT";
+    else if(deltaX < 0 && direction!="RIGHT") direction="LEFT";
+  } else { // vertical swipe
+    if(deltaY > 0 && direction!="UP") direction="DOWN";
+    else if(deltaY < 0 && direction!="DOWN") direction="UP";
   }
-}, {passive:false});
+}, false);
 
-// Game loop
+// Game Loop
 function update(){
-  if(targetDirection) direction=targetDirection;
-
   let head = {x: snake[0].x, y: snake[0].y};
   if(direction==="LEFT") head.x -= box;
   if(direction==="RIGHT") head.x += box;
@@ -187,16 +175,16 @@ function update(){
   if(direction==="DOWN") head.y += box;
 
   // Wrap around
-  if(head.x>=canvas.width) head.x=0;
-  if(head.x<0) head.x=canvas.width-box;
-  if(head.y>=canvas.height) head.y=0;
-  if(head.y<0) head.y=canvas.height-box;
+  if(head.x >= canvas.width) head.x = 0;
+  if(head.x < 0) head.x = canvas.width-box;
+  if(head.y >= canvas.height) head.y = 0;
+  if(head.y < 0) head.y = canvas.height-box;
 
   // Collision with self
   for(let i=0;i<snake.length;i++){
     if(head.x===snake[i].x && head.y===snake[i].y){
       alert("Game Over!");
-      if(score>highscore){localStorage.setItem("snakeHighscore",score);}
+      if(score>highscore) localStorage.setItem("snakeHighscore",score);
       document.location.reload();
     }
   }
@@ -205,21 +193,17 @@ function update(){
 
   // Eat food
   if(head.x===food.x && head.y===food.y){
-    score++;
+    score+=1;
     document.getElementById("score").textContent = score;
     food = {x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box};
-  }else snake.pop();
-
-  // Draw with trail
-  ctx.fillStyle = themes[currentTheme].canvasBg + "90"; // semi-transparent for trail
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  } else snake.pop();
 
   drawSnake();
-  drawFood();
 }
 
-applyTheme(themes[currentTheme]);
-setInterval(update,120);
+// Start game
+setInterval(update, 150);
 </script>
 </body>
 </html>
+
